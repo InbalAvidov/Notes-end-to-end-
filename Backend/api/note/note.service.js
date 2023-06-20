@@ -1,19 +1,19 @@
 const dbService = require('../../services/db.service')
 const logger = require('../../services/logger.service')
-const utilService = require('../../services/util.service')
 const ObjectId = require('mongodb').ObjectId
 
-async function query(filterBy = {txt : '' , pin: false}) {
+async function query(filterBy = { txt: '', pin: false }) {
     try {
         const criteria = {}
         if (filterBy.txt) {
-            criteria.title = { $regex: filterBy.txt, $options: 'i' }
-            criteria.txt = { $regex: filterBy.txt, $options: 'i' }
             criteria.content = { $regex: filterBy.txt, $options: 'i' }
         }
-        if(filterBy.pin) criteria.isPinned = filterBy.pin
+        if (filterBy.pin) criteria.isPinned = filterBy.pin
+        criteria.createdBy = filterBy.userId
         const collection = await dbService.getCollection('note')
-        var notes = await collection.find(criteria).toArray()
+        console.log('criteria:', criteria)
+        const notes = await collection.find(criteria).toArray()
+        notes.reverse()
         const sortedNotes = notes.reduce((acc, note) => {
             if (note.isPinned) acc.unshift(note)
             else acc.push(note)
@@ -50,6 +50,7 @@ async function remove(noteId) {
 
 async function add(note) {
     try {
+        console.log('adding', note)
         const collection = await dbService.getCollection('note')
         await collection.insertOne(note)
         return note
@@ -65,13 +66,17 @@ async function update(note) {
             txt: note.txt,
             color: note.color,
             isPinned: note.isPinned,
-            title: note.title
+            title: note.title,
+            todos: note.todos,
+            content: note.txt + note.title + note.todos.join(''),
+            createdBy: note.createdBy,
+            url: note.url
         }
         const collection = await dbService.getCollection('note')
         await collection.updateOne({ _id: ObjectId(note._id) }, { $set: noteToSave })
-        return note
+        return noteToSave
     } catch (err) {
-        logger.error(`cannot update note ${noteId}`, err)
+        logger.error(`cannot update note ${note._id}`, err)
         throw err
     }
 }

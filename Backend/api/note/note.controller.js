@@ -8,7 +8,8 @@ async function getNotes(req, res) {
     console.log('req.query:',req.query)
     const filterBy = {
       txt: req.query.txt || '',
-      pin: req.query.pin === 'false' ? false : true
+      pin: req.query.pin === 'false' ? false : true,
+      userId : req.query.userId
     }
     const notes = await noteService.query(filterBy)
     res.json(notes)
@@ -33,7 +34,6 @@ async function addNote(req, res) {
   const {loggedinUser} = req
   try {
     const note = req.body
-    note.owner = loggedinUser
     const addedNote = await noteService.add(note)
     res.json(addedNote)
   } catch (err) {
